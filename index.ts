@@ -22,32 +22,34 @@ interface Item {
   price: number;
 }
 
-interface Discount {
-  value: number;
-  type: 'flat' | 'percent';
-}
-
 interface BasketItem {
   item: Item;
   name: string;
   price: number;
   amount: number;
+  discount?: number;
   total: number;
   applied?: boolean;
 }
 
-interface ConditionItem {
+interface Condition {
   field: string;
   type: string;
   condition: string;
   valueToBeCompared?: any;
 }
 
+interface Coverage {
+  value: number;
+  type: 'flat' | 'percent'
+}
+
 interface Tariff {
   title: string;
   description: string;
-  patientConditions?: ConditionItem[];
-  itemConditions?: ConditionItem[];
+  patientConditions?: Condition[];
+  itemConditions?: Condition[];
+  coverage: Coverage;
   startDate: Date;
   endDate: Date;
 }
@@ -58,7 +60,7 @@ const itemList: Item[] = [
   {
     name: 'Paracetamal',
     type: 'medicine',
-    price: 100
+    price: 300
   },
   {
     name: 'Aspirine',
@@ -68,7 +70,7 @@ const itemList: Item[] = [
   {
     name: 'Arm Slings',
     type: 'medical supply',
-    price: 100
+    price: 300
   },
   {
     name: 'Athletic Supporters',
@@ -78,7 +80,7 @@ const itemList: Item[] = [
   {
     name: 'Vitamin A',
     type: 'vitamin & mineral',
-    price: 100
+    price: 300
   },
   {
     name: 'Vitamin C',
@@ -88,7 +90,7 @@ const itemList: Item[] = [
   {
     name: 'Anxiety Therapy',
     type: 'therapy service',
-    price: 100
+    price: 300
   },
   {
     name: 'Trauma Counseling',
@@ -98,7 +100,7 @@ const itemList: Item[] = [
   {
     name: 'Dr. Hannibal Lecter',
     type: 'doctor fee',
-    price: 100
+    price: 300
   },
   {
     name: 'Dr. James Fallon',
@@ -171,16 +173,16 @@ class Comparator {
 
 // Basket
 const basket: BasketItem[] = [
-  { item: itemList[0], name: itemList[0].name, price: itemList[0].price, amount: 10, total: 0, applied: false },
-  { item: itemList[1], name: itemList[1].name, price: itemList[1].price, amount: 10, total: 0, applied: false },
-  { item: itemList[2], name: itemList[2].name, price: itemList[2].price, amount: 10, total: 0, applied: false },
-  { item: itemList[3], name: itemList[3].name, price: itemList[3].price, amount: 10, total: 0, applied: false },
-  { item: itemList[4], name: itemList[4].name, price: itemList[4].price, amount: 10, total: 0, applied: false },
-  { item: itemList[5], name: itemList[5].name, price: itemList[5].price, amount: 10, total: 0, applied: false },
-  { item: itemList[6], name: itemList[6].name, price: itemList[6].price, amount: 1, total: 0, applied: false },
-  { item: itemList[7], name: itemList[7].name, price: itemList[7].price, amount: 1, total: 0, applied: false },
-  { item: itemList[8], name: itemList[8].name, price: itemList[8].price, amount: 1, total: 0, applied: false },
-  { item: itemList[9], name: itemList[9].name, price: itemList[9].price, amount: 1, total: 0, applied: false },
+  { item: itemList[0], name: itemList[0].name, price: itemList[0].price, amount: 10, discount: 0, total: 0, applied: false },
+  { item: itemList[1], name: itemList[1].name, price: itemList[1].price, amount: 10, discount: 0, total: 0, applied: false },
+  { item: itemList[2], name: itemList[2].name, price: itemList[2].price, amount: 10, discount: 0, total: 0, applied: false },
+  { item: itemList[3], name: itemList[3].name, price: itemList[3].price, amount: 10, discount: 0, total: 0, applied: false },
+  { item: itemList[4], name: itemList[4].name, price: itemList[4].price, amount: 10, discount: 0, total: 0, applied: false },
+  { item: itemList[5], name: itemList[5].name, price: itemList[5].price, amount: 10, discount: 0, total: 0, applied: false },
+  { item: itemList[6], name: itemList[6].name, price: itemList[6].price, amount: 1, discount: 0, total: 0, applied: false },
+  { item: itemList[7], name: itemList[7].name, price: itemList[7].price, amount: 1, discount: 0, total: 0, applied: false },
+  { item: itemList[8], name: itemList[8].name, price: itemList[8].price, amount: 1, discount: 0, total: 0, applied: false },
+  { item: itemList[9], name: itemList[9].name, price: itemList[9].price, amount: 1, discount: 0, total: 0, applied: false },
 ];
 
 // ===========================================================================================
@@ -196,6 +198,7 @@ const middleAgedManTariff: Tariff = {
   itemConditions: [
     { field: 'type', type: 'item', condition: 'isIn', valueToBeCompared: ['medicine', 'doctor fee'] }, // item type is in this range
   ],
+  coverage: { value: 10, type: 'percent' },
   startDate: new Date(2021, 11, 1),
   endDate: new Date(2021, 11, 31)
 };
@@ -209,6 +212,7 @@ const birthMonthTariff: Tariff = {
   itemConditions: [
     { field: 'type', type: 'item', condition: 'isIn', valueToBeCompared: ['medicine', 'doctor fee'] }, // item type is in this range
   ],
+  coverage: { value: 100, type: 'flat' },
   startDate: new Date(2021, 11, 1),
   endDate: new Date(2021, 11, 31)
 };
@@ -272,6 +276,24 @@ const checkItemConditionsApply = (list, tariff) => {
   return result;
 };
 
+const applyItemCoverage = (list, tariff) => {
+  const { coverage: { value, type } } = tariff;
+  const result = list.map((item) => {
+    if (item.applied) {
+      let toBeApplied = value;
+      if (type === 'percent') {
+        toBeApplied = (item.price * value) / 100;
+      }
+
+      item.discount = toBeApplied;
+      item.total = item.price - toBeApplied;
+    }
+    return item;
+  });
+
+  return result;
+}
+
 // ======================================================================
 
 const performConditionsApply = (patient, list, tariff) => {
@@ -284,7 +306,9 @@ const performConditionsApply = (patient, list, tariff) => {
 
   const checkItemConditionsResult = checkItemConditionsApply(list, tariff);
 
-  return checkItemConditionsResult;
+  const applyItemCoverageResult = applyItemCoverage(checkItemConditionsResult, tariff);
+
+  return applyItemCoverageResult;
 };
 
 const isDateBetween = (dateTarget: number, tariff: Tariff): boolean => {
