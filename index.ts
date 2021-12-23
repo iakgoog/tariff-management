@@ -236,9 +236,9 @@ const checkPatientConditionsApply = (patient, tariff) => {
 
   const patientConditions = tariff.patientConditions.filter((item) => item.type === 'patient');
 
-  const patientResult = patientConditions.map(c => {
+  const patientResult = patientConditions.map(condition => {
     const cond = new Comparator(patient);
-    return cond[c.condition](c.field, c.valueToBeCompared);
+    return cond[condition.condition](condition.field, condition.valueToBeCompared);
   }).every(i => i === true);
 
   if (patientResult) {
@@ -252,9 +252,9 @@ const checkPatientConditionsApply = (patient, tariff) => {
 
 const checkItemConditionsApply = (list, tariff) => {
   if (!Array.isArray(tariff.itemConditions)) {
-    const applyAllItems = list.map((l) => {
-      l.applied = true;
-      return l;
+    const applyAllItems = list.map((item) => {
+      item.applied = true;
+      return item;
     });
     return applyAllItems;
   }
@@ -262,9 +262,9 @@ const checkItemConditionsApply = (list, tariff) => {
   const itemConditions = tariff.itemConditions.filter((item) => item.type === 'item');
 
   const result = list.map((item) => {
-    const itemResult = itemConditions.map(c => {
+    const itemResult = itemConditions.map(condition => {
       const cond = new Comparator(item.item);
-      const booleanResult = cond[c.condition](c.field, c.valueToBeCompared);
+      const booleanResult = cond[condition.condition](condition.field, condition.valueToBeCompared);
       return booleanResult;
     }).every(i => i === true);
 
